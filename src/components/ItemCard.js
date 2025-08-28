@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 
-export function ItemCard({ item, isFavourite, onToggleFavourite }) {
+export const ItemCard = React.memo(function ItemCard({ item, isFavourite, onToggleFavourite }) {
+	const handleToggleFavourite = useCallback(() => {
+		onToggleFavourite(item.id);
+	}, [onToggleFavourite, item.id]);
+
 	return (
 		<div className="item-card" role="listitem" aria-label={`Item ${item.name}`}>
 			<div className="item-card__header">
@@ -9,7 +13,7 @@ export function ItemCard({ item, isFavourite, onToggleFavourite }) {
 					className={"fav-btn" + (isFavourite ? " fav-btn--active" : "")}
 					aria-pressed={isFavourite}
 					title={isFavourite ? "Remove from favourites" : "Add to favourites"}
-					onClick={() => onToggleFavourite(item.id)}
+					onClick={handleToggleFavourite}
 				>
 					{isFavourite ? "★" : "☆"}
 				</button>
@@ -21,6 +25,6 @@ export function ItemCard({ item, isFavourite, onToggleFavourite }) {
 			</div>
 		</div>
 	);
-}
+});
 
 

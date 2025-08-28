@@ -1,11 +1,9 @@
 import './App.css';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { ItemCard } from './components/ItemCard';
 import { Controls } from './components/Controls';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
-
-const PAGE_SIZE = 9;
 
 function App() {
 	const [items, setItems] = useState([]);
@@ -19,6 +17,7 @@ function App() {
 	const [sortDir, setSortDir] = useState('asc');
 	const [showFavouritesOnly, setShowFavouritesOnly] = useState(false);
 	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] = useState(9);
 
 	const [favourites, setFavourites] = useLocalStorage('favourites:v1', []);
 
@@ -59,18 +58,55 @@ function App() {
 		return list;
 	}, [items, debouncedSearch, category, sortBy, sortDir, showFavouritesOnly, favourites]);
 
-	const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-	const pageClamped = Math.min(page, totalPages);
+	const totalPages = useMemo(() => Math.max(1, Math.ceil(filtered.length / pageSize)), [filtered.length, pageSize]);
+	const pageClamped = useMemo(() => Math.min(page, totalPages), [page, totalPages]);
+	
 	const paged = useMemo(() => {
-		const start = (pageClamped - 1) * PAGE_SIZE;
-		return filtered.slice(start, start + PAGE_SIZE);
-	}, [filtered, pageClamped]);
+		const start = (pageClamped - 1) * pageSize;
+		return filtered.slice(start, start + pageSize);
+	}, [filtered, pageClamped, pageSize]);
 
-	useEffect(() => { setPage(1); }, [debouncedSearch, category, sortBy, sortDir, showFavouritesOnly]);
+	useEffect(() => { setPage(1); }, [debouncedSearch, category, sortBy, sortDir, showFavouritesOnly, pageSize]);
 
-	const toggleFavourite = (id) => {
+	// Memoized callback functions to prevent unnecessary re-renders
+	const toggleFavourite = useCallback((id) => {
 		setFavourites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-	};
+	}, [setFavourites]);
+
+	const handleSearch = useCallback((value) => {
+		setSearch(value);
+	}, []);
+
+	const handleCategory = useCallback((value) => {
+		setCategory(value);
+	}, []);
+
+	const handleSortBy = useCallback((value) => {
+		setSortBy(value);
+	}, []);
+
+	const handleSortDir = useCallback((value) => {
+		setSortDir(value);
+	}, []);
+
+	const handleToggleFavouritesOnly = useCallback(() => {
+		setShowFavouritesOnly((v) => !v);
+	}, []);
+
+	const handlePageSize = useCallback((value) => {
+		setPageSize(parseInt(value));
+	}, []);
+
+	const handlePrevPage = useCallback(() => {
+		setPage((p) => Math.max(1, p - 1));
+	}, []);
+
+	const handleNextPage = useCallback(() => {
+		setPage((p) => Math.min(totalPages, p + 1));
+	}, [totalPages]);
+
+	// Memoized favourites lookup for better performance
+	const favouritesSet = useMemo(() => new Set(favourites), [favourites]);
 
 	return (
 		<div className="container">
@@ -79,16 +115,16 @@ function App() {
 			</div>
 			<Controls
 				search={search}
-				onSearch={setSearch}
+				onSearch={handleSearch}
 				categories={categories}
 				category={category}
-				onCategory={setCategory}
+				onCategory={handleCategory}
 				sortBy={sortBy}
 				sortDir={sortDir}
-				onSortBy={setSortBy}
-				onSortDir={setSortDir}
+				onSortBy={handleSortBy}
+				onSortDir={handleSortDir}
 				showFavouritesOnly={showFavouritesOnly}
-				onToggleFavouritesOnly={() => setShowFavouritesOnly((v) => !v)}
+				onToggleFavouritesOnly={handleToggleFavouritesOnly}
 			/>
 
 			{isLoading && (
@@ -108,13 +144,35 @@ function App() {
 						<>
 							<div className="grid" role="list">
 								{paged.map((item) => (
-									<ItemCard key={item.id} item={item} isFavourite={favourites.includes(item.id)} onToggleFavourite={toggleFavourite} />
+									<ItemCard 
+										key={item.id} 
+										item={item} 
+										isFavourite={favouritesSet.has(item.id)} 
+										onToggleFavourite={toggleFavourite} 
+									/>
 								))}
 							</div>
-							<div className="pagination" role="navigation" aria-label="Pagination">
-								<button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={pageClamped === 1} aria-label="Previous page">Prev</button>
-								<span>Page {pageClamped} of {totalPages}</span>
-								<button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={pageClamped === totalPages} aria-label="Next page">Next</button>
+							<div className="pagination-container">
+								<div className="pagination" role="navigation" aria-label="Pagination">
+									<div className="page-size-selector">
+										<label className="page-size-label">
+											<span>Per Page:</span>
+											<select
+												value={pageSize}
+												onChange={(e) => handlePageSize(e.target.value)}
+												aria-label="Items per page"
+											>
+												<option value={10}>10</option>
+												<option value={20}>20</option>
+												<option value={30}>30</option>
+												<option value={50}>50</option>
+											</select>
+										</label>
+									</div>
+									<button onClick={handlePrevPage} disabled={pageClamped === 1} aria-label="Previous page">Prev</button>
+									<span>Page {pageClamped} of {totalPages}</span>
+									<button onClick={handleNextPage} disabled={pageClamped === totalPages} aria-label="Next page">Next</button>
+								</div>
 							</div>
 						</>
 					)}

@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useCallback } from "react";
 
-export function Controls({
+export const Controls = React.memo(function Controls({
   search,
   onSearch,
   categories,
@@ -13,6 +13,26 @@ export function Controls({
   showFavouritesOnly,
   onToggleFavouritesOnly,
 }) {
+  const handleSearchChange = useCallback((e) => {
+    onSearch(e.target.value);
+  }, [onSearch]);
+
+  const handleCategoryChange = useCallback((e) => {
+    onCategory(e.target.value);
+  }, [onCategory]);
+
+  const handleSortByChange = useCallback((e) => {
+    onSortBy(e.target.value);
+  }, [onSortBy]);
+
+  const handleSortDirChange = useCallback((e) => {
+    onSortDir(e.target.value);
+  }, [onSortDir]);
+
+  const handleFavouritesToggle = useCallback((e) => {
+    onToggleFavouritesOnly();
+  }, [onToggleFavouritesOnly]);
+
   return (
     <div className="controls" role="region" aria-label="Filters and sorting">
       <label className="control control--search">
@@ -29,7 +49,7 @@ export function Controls({
             type="search"
             placeholder="Search by name"
             value={search}
-            onChange={(e) => onSearch(e.target.value)}
+            onChange={handleSearchChange}
             aria-label="Search by name"
           />
           {/* {search && (
@@ -49,7 +69,7 @@ export function Controls({
         <span className="control__label">Category</span>
         <select
           value={category}
-          onChange={(e) => onCategory(e.target.value)}
+          onChange={handleCategoryChange}
           aria-label="Filter by category"
         >
           <option value="all">All</option>
@@ -65,7 +85,7 @@ export function Controls({
         <span className="control__label">Sort By</span>
         <select
           value={sortBy}
-          onChange={(e) => onSortBy(e.target.value)}
+          onChange={handleSortByChange}
           aria-label="Sort by field"
         >
           <option value="price">Price</option>
@@ -77,7 +97,7 @@ export function Controls({
         <span className="control__label">Direction</span>
         <select
           value={sortDir}
-          onChange={(e) => onSortDir(e.target.value)}
+          onChange={handleSortDirChange}
           aria-label="Sort direction"
         >
           <option value="asc">Ascending</option>
@@ -89,11 +109,11 @@ export function Controls({
         <input
           type="checkbox"
           checked={showFavouritesOnly}
-          onChange={onToggleFavouritesOnly}
+          onChange={handleFavouritesToggle}
           aria-label="Show favourites only"
         />
         <span>Favourites only</span>
       </label>
     </div>
   );
-}
+});
