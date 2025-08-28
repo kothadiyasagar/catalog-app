@@ -18,7 +18,9 @@ npm start
 ```
 
 Then open http://localhost:3000
+
 depdeployment  link  https://bright-kringle-44e445.netlify.app/
+
 What this implements
 
 - Fetches data from local JSON (public/items.json) with loading indicator.
